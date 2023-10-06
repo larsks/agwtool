@@ -8,21 +8,22 @@ import (
 	"os"
 	"os/exec"
 
-	"agwtool/pkg/env"
+	"agwtool/internal"
 
 	"github.com/creack/pty"
 	"github.com/la5nta/wl2k-go/transport/ax25/agwpe"
 )
 
-var options struct {
-	MyCallsign string
-	TncAddress string
-	EscapeChar string
-}
+type (
+	Options struct {
+		internal.CommonOptions
+	}
+)
+
+var options Options
 
 func init() {
-	flag.StringVar(&options.MyCallsign, "callsign", env.Getenv("AGW_CALLSIGN", ""), "Your callsign")
-	flag.StringVar(&options.TncAddress, "tncaddress", env.Getenv("AGW_TNCADDRESS", "127.0.0.1:8001"), "AGW TNC Address")
+	internal.InitCommonOptions(&options.CommonOptions)
 }
 
 func printUsage() {
