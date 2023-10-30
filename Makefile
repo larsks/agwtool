@@ -1,3 +1,6 @@
+# We really want things like mdns to work correctly
+export GODEBUG=netdns=cgo
+
 COMMANDS = agwlisten agwconnect agwtalk
 
 %: cmd/%/main.go

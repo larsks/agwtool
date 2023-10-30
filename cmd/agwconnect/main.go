@@ -2,11 +2,13 @@ package main
 
 import (
 	"agwtool/internal"
+	"bufio"
 	"context"
 	"flag"
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"os"
 
 	"github.com/la5nta/wl2k-go/transport/ax25/agwpe"
@@ -71,7 +73,7 @@ func main() {
 	}
 	defer port.Close()
 
-	log.Printf("establishing connecting with %s", targetCallsign)
+	log.Printf("establishing connection with %s", targetCallsign)
 	conn, err := port.DialContext(context.TODO(), targetCallsign)
 	if err != nil {
 		panic(err)
@@ -84,5 +86,23 @@ func main() {
 	}
 
 	go func() { io.Copy(conn, os.Stdout) }()
-	io.Copy(os.Stdout, conn)
+	readFromStdin(conn)
+}
+
+func readFromStdin(conn net.Conn) error {
+	log.Printf("start reading from stdin")
+	reader := bufio.NewScanner(os.Stdin)
+
+	for reader.Scan() {
+		line := reader.Text()
+		log.Printf("read line: %s", line)
+		if line == "~." {
+			log.Printf("exit")
+			break
+		}
+	}
+
+	conn.Close()
+
+	return nil
 }
