@@ -2,18 +2,19 @@ package main
 
 import (
 	"agwtool/internal"
-	"bufio"
+	//"bufio"
 	"context"
 	"flag"
 	"fmt"
-	"io"
+	//"io"
 	"log"
 	"net"
 	"os"
 
 	"github.com/la5nta/wl2k-go/transport/ax25/agwpe"
-	"github.com/pkg/term/termios"
-	"golang.org/x/sys/unix"
+	//"github.com/pkg/term/termios"
+	//"golang.org/x/sys/unix"
+	"github.com/chzyer/readline"
 )
 
 type (
@@ -52,6 +53,24 @@ func main() {
 
 	targetCallsign := flag.Arg(0)
 
+	log.Printf("connecting to tnc at %s", options.TncAddress)
+	port, err := agwpe.OpenPortTCP(options.TncAddress, 0, options.MyCallsign)
+	if err != nil {
+		panic(err)
+	}
+	defer port.Close()
+
+	if _, err := port.Version(); err != nil {
+		log.Fatalf("AGWPE TNC initialization failed: %w", err)
+	}
+
+	log.Printf("establishing connection with %s", targetCallsign)
+	conn, err := port.DialContext(context.TODO(), targetCallsign)
+	if err != nil {
+		panic(err)
+	}
+
+	/*
 	var oldTermattr, newTermattr unix.Termios
 	if err := termios.Tcgetattr(os.Stdout.Fd(), &oldTermattr); err != nil {
 		log.Fatal("failed to get terminal attributes")
@@ -60,48 +79,90 @@ func main() {
 		termios.Tcsetattr(os.Stdout.Fd(), termios.TCSANOW, &oldTermattr)
 	}()
 
-	log.Printf("connecting to tnc at %s", options.TncAddress)
-	tnc, err := agwpe.OpenTCP(options.TncAddress)
-	if err != nil {
-		panic(err)
-	}
-	defer tnc.Close()
-
-	port, err := tnc.RegisterPort(0, options.MyCallsign)
-	if err != nil {
-		panic(err)
-	}
-	defer port.Close()
-
-	log.Printf("establishing connection with %s", targetCallsign)
-	conn, err := port.DialContext(context.TODO(), targetCallsign)
-	if err != nil {
-		panic(err)
-	}
-
 	newTermattr = oldTermattr
 	termios.Cfmakeraw(&newTermattr)
 	if err := termios.Tcsetattr(os.Stdout.Fd(), termios.TCSANOW, &newTermattr); err != nil {
 		log.Fatalf("failed to set terminal attributes")
 	}
+	*/
 
-	go func() { io.Copy(conn, os.Stdout) }()
-	readFromStdin(conn)
+	go func() { readFromRemote(conn) }()
+
+	rl, err := readline.New("")
+	if err != nil {
+		panic(err)
+	}
+	defer rl.Close()
+
+	for {
+		line, err := rl.Readline()
+		if err != nil { // io.EOF
+			break
+		}
+		_, err = conn.Write([]byte(line))
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	log.Printf("all done")
+}
+
+func readFromRemote(conn net.Conn) error {
+	buf := make([]byte, 256)
+	for {
+		nb, err := conn.Read(buf)
+		if err != nil {
+			return fmt.Errorf("failed to read from remote: %w", err)
+		}
+		if nb == 0 {
+			break
+		}
+
+		start := 0
+		for i := range(buf[:nb]) {
+			if buf[i] == '\r' {
+				os.Stdout.Write(buf[start:i])
+				os.Stdout.Write([]byte("\r\n"))
+				start = i
+			}
+		}
+
+		os.Stdout.Write(buf[start:nb])
+	}
+
+	return nil
 }
 
 func readFromStdin(conn net.Conn) error {
 	log.Printf("start reading from stdin")
-	reader := bufio.NewScanner(os.Stdin)
 
-	for reader.Scan() {
-		line := reader.Text()
-		log.Printf("read line: %s", line)
-		if line == "~." {
-			log.Printf("exit")
+	char := make([]byte, 1)
+	buf := make([]byte, 256)
+	buflen := 0
+
+	for {
+		nbr, err := os.Stdin.Read(char)
+		if err != nil {
+			return fmt.Errorf("failed read from stdin: %w", err)
+		}
+		if nbr == 0 {
 			break
+		}
+
+		buf = append(buf, char[0])
+		buflen += 1
+		if buflen == 256 || char[0] == '\r' || char[0] == '\n' {
+			log.Printf("writing to remote: %s", buf[:buflen])
+			_, err := conn.Write(buf[:buflen])
+			if err != nil {
+				return fmt.Errorf("failed write to remote: %w", err)
+			}
+			buflen = 0
 		}
 	}
 
+	log.Printf("closing connection")
 	conn.Close()
 
 	return nil
