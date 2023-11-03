@@ -24,6 +24,9 @@ import (
 type (
 	Options struct {
 		internal.CommonOptions
+
+		RecvMapCrLf bool
+		SendMapLfCr bool
 	}
 )
 
@@ -109,7 +112,16 @@ func main() {
 		if err != nil { // io.EOF
 			break
 		}
-		_, err = conn.Write([]byte(line))
+		if err != nil {
+			panic(err)
+		}
+
+		if options.SendMapLfCr {
+			_, err = conn.Write(append([]byte(line), '\r'))
+		} else {
+			_, err = conn.Write(append([]byte(line), '\n'))
+		}
+
 		if err != nil {
 			panic(err)
 		}
