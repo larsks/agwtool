@@ -1,12 +1,14 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"os/exec"
+	"strings"
+
+	flag "github.com/spf13/pflag"
 
 	"agwtool/internal"
 
@@ -27,14 +29,16 @@ func init() {
 }
 
 func printUsage() {
-	fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s [options] command [arg [...]]\n", os.Args[0])
-	fmt.Fprintf(flag.CommandLine.Output(), "\nOptions:\n")
+	fmt.Printf("Usage: %s [options] command [arg [...]]\n", os.Args[0])
+	fmt.Printf("\nOptions:\n")
 	flag.PrintDefaults()
 }
 
 func main() {
 	flag.Usage = printUsage
 	flag.Parse()
+
+	os.Chdir(options.WorkingDirectory)
 
 	if options.MyCallsign == "" {
 		log.Fatal("callsign is unset")
@@ -47,6 +51,8 @@ func main() {
 	if flag.NArg() < 1 {
 		log.Fatal("missing command")
 	}
+
+	options.MyCallsign = strings.ToUpper(options.MyCallsign)
 
 	log.Printf("connecting to tnc at %s", options.TncAddress)
 	tnc, err := agwpe.OpenTCP(options.TncAddress)
