@@ -2,6 +2,8 @@ package main
 
 import (
 	"agwtool/internal"
+	"strings"
+
 	//"bufio"
 	"context"
 	"fmt"
@@ -57,6 +59,9 @@ func main() {
 	}
 
 	targetCallsign := flag.Arg(0)
+
+	options.MyCallsign = strings.ToUpper(options.MyCallsign)
+	targetCallsign = strings.ToUpper(targetCallsign)
 
 	log.Printf("connecting to tnc at %s", options.TncAddress)
 	port, err := agwpe.OpenPortTCP(options.TncAddress, 0, options.MyCallsign)
