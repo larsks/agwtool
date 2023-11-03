@@ -17,5 +17,4 @@ type (
 func InitCommonOptions(options *CommonOptions) {
 	flag.StringVarP(&options.MyCallsign, "callsign", "c", env.Getenv("AGW_CALLSIGN", ""), "Your callsign")
 	flag.StringVarP(&options.TncAddress, "tncaddress", "t", env.Getenv("AGW_TNCADDRESS", "127.0.0.1:8000"), "AGW TNC Address")
-	flag.StringVarP(&options.WorkingDirectory, "working-directory", "d", ".", "Working directory")
 }
