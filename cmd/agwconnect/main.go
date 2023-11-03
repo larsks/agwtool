@@ -4,8 +4,10 @@ import (
 	"agwtool/internal"
 	//"bufio"
 	"context"
-	"flag"
 	"fmt"
+
+	flag "github.com/spf13/pflag"
+
 	//"io"
 	"log"
 	"net"
@@ -27,11 +29,14 @@ var options Options
 
 func init() {
 	internal.InitCommonOptions(&options.CommonOptions)
+
+	flag.BoolVarP(&options.RecvMapCrLf, "recv-crlf", "", false, "Map CR to LF on receive")
+	flag.BoolVarP(&options.SendMapLfCr, "send-lfcr", "", false, "Map LF to CR on send")
 }
 
 func printUsage() {
-	fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s [options] target_callsign\n", os.Args[0])
-	fmt.Fprintf(flag.CommandLine.Output(), "\nOptions:\n")
+	fmt.Printf("Usage: %s [options] target_callsign\n", os.Args[0])
+	fmt.Printf("\nOptions:\n")
 	flag.PrintDefaults()
 }
 
