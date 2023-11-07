@@ -1,20 +1,18 @@
 package main
 
 import (
-	"agwtool/internal"
-	"strings"
-
 	"context"
 	"fmt"
-
-	flag "github.com/spf13/pflag"
-
 	"log"
 	"net"
 	"os"
+	"strings"
 
 	"github.com/chzyer/readline"
 	"github.com/la5nta/wl2k-go/transport/ax25/agwpe"
+	flag "github.com/spf13/pflag"
+
+	"agwtool/internal"
 )
 
 type (
@@ -46,7 +44,7 @@ func main() {
 	flag.Parse()
 
 	if options.MyCallsign == "" {
-		log.Fatal("callsign is unset")
+		log.Fatal("local callsign is unset")
 	}
 
 	if options.TncAddress == "" {
@@ -58,6 +56,9 @@ func main() {
 	}
 
 	targetCallsign := flag.Arg(0)
+	if targetCallsign == "" {
+		log.Fatal("target callsign is unset")
+	}
 
 	options.MyCallsign = strings.ToUpper(options.MyCallsign)
 	targetCallsign = strings.ToUpper(targetCallsign)
@@ -81,6 +82,7 @@ func main() {
 		panic(err)
 	}
 
+	// copy bytes from remote to stdout
 	go func() { readFromRemote(conn) }()
 
 	rl, err := readline.New("> ")
@@ -124,10 +126,8 @@ func readFromRemote(conn net.Conn) error {
 		}
 
 		for i := range buf[:nb] {
-			if buf[i] == '\r' {
-				if options.RecvMapCrLf {
-					buf[i] = '\n'
-				}
+			if buf[i] == '\r' && options.RecvMapCrLf {
+				buf[i] = '\n'
 			}
 		}
 
