@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/chzyer/readline v1.5.1
-	github.com/creack/pty v1.1.18
+	github.com/creack/pty v1.1.9
 	github.com/gdamore/tcell/v2 v2.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/la5nta/wl2k-go v0.11.4
@@ -21,5 +21,3 @@ require (
 	golang.org/x/term v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 )
-
-replace github.com/la5nta/wl2k-go v0.11.4 => ./wl2k-go
